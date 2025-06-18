@@ -4,6 +4,8 @@ import os
 from functools import wraps
 from typing import Callable, Any
 
+MAX_CHARS = 10_000
+
 
 def llm_error_handler(func: Callable[..., str]) -> Callable[..., str]:
     """
@@ -65,3 +67,25 @@ def get_files_info(working_directory: str, directory: str | None = None) -> str:
         result.append(f"- {entry}: file_size={file_size} bytes, is_dir={is_dir}")
 
     return "\n".join(result)
+
+
+@llm_error_handler
+def get_file_contents(working_directory: str, file_path: str) -> str:
+    wd = Path(working_directory).resolve()
+
+    assert wd.exists() and wd.is_dir(), "Working directory is not valid"
+
+    tentative_filepath = (wd / file_path).resolve()
+
+    assert str(tentative_filepath.absolute()).startswith(
+        str(wd.absolute())
+    ), f'Cannot read "{file_path}" as it is outside the permitted working directory'
+
+    size_file = os.path.getsize(tentative_filepath)
+
+    # Read the file and return its contents
+    with open(tentative_filepath, "r") as file:
+        contents = file.read(MAX_CHARS)
+        if size_file > MAX_CHARS:
+            return f'{contents}... "{file_path}" truncated at 10000 characters'
+        return contents
