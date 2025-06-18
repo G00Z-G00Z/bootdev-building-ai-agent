@@ -84,6 +84,6 @@ def get_file_contents(working_directory: str, file_path: str) -> str:
     # Read the file and return its contents
     with open(tentative_filepath, "r") as file:
         contents = file.read()
-        if len(contents) > 10000:
-            return f'{contents[:10000]}... "{file_path}" truncated at 10000 characters'
+        if len(contents) > MAX_CHARS:
+            return f'{contents[:MAX_CHARS-1]}... "{file_path}" truncated at 10000 characters'
         return contents

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import unittest
 
-from functions.get_files_info import get_files_info
+from functions.get_files_info import MAX_CHARS, get_file_contents, get_files_info
 
 
 class TestGetFilesInfo(unittest.TestCase):
@@ -18,19 +18,16 @@ class TestGetFilesInfo(unittest.TestCase):
     def test_root(self):
         # expect to get a list of files (a string with no Error keyword)
         result = get_files_info(self.dir_calculator, ".")
-        print(result)  # Print the result
         self.assertNotIn("Error", result, "Expected no error in the result")
 
     def test_pkg(self):
         # expect to get a list of files (a string with no Error keyword)
         result = get_files_info(self.dir_calculator, "pkg")
-        print(result)  # Print the result
         self.assertNotIn("Error", result, "Expected no error in the result")
 
     def test_bin(self):
         # Expects a str with the Keyword Error: at the front
         result = get_files_info(self.dir_calculator, "/bin")
-        print(result)  # Print the result
         self.assertTrue(
             result.startswith("Error:"), "Expected result to start with 'Error:'"
         )
@@ -38,9 +35,16 @@ class TestGetFilesInfo(unittest.TestCase):
     def test_outside(self):
         # Expects a str with the Keyword Error: at the front
         result = get_files_info(self.dir_calculator, "../")
-        print(result)  # Print the result
         self.assertTrue(
             result.startswith("Error:"), "Expected result to start with 'Error:'"
+        )
+
+    def test_lorem(self):
+        # Expects a str with the Keyword Error: at the front
+        result = get_file_contents(self.dir_calculator, "lorem.txt")
+        self.assertNotIn("Error", result, "Expected no error in the result")
+        self.assertLessEqual(
+            len(result), MAX_CHARS, f"The result was not truncated to {MAX_CHARS}"
         )
 
 
