@@ -5,6 +5,8 @@ import os
 from functools import wraps
 from typing import Callable, Any
 
+from google.genai import types
+
 MAX_CHARS = 10_000
 
 
@@ -94,6 +96,21 @@ def get_files_info(working_directory: str, directory: str | None = None) -> str:
         result.append(f"- {entry}: file_size={file_size} bytes, is_dir={is_dir}")
 
     return "\n".join(result)
+
+
+schema_get_files_info = types.FunctionDeclaration(
+    name="get_files_info",
+    description="Lists files in the specified directory along with their sizes, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "directory": types.Schema(
+                type=types.Type.STRING,
+                description="The directory to list files from, relative to the working directory. If not provided, lists files in the working directory itself.",
+            ),
+        },
+    ),
+)
 
 
 @llm_error_handler
