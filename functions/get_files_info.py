@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import os
 
 from functools import wraps
@@ -28,6 +29,32 @@ def llm_error_handler(func: Callable[..., str]) -> Callable[..., str]:
             return str(f"Error: {e}")
 
     return wrapper
+
+
+def raise_is_file_outside(
+    working_directory: str, file_path: str, file_action: str
+) -> Path:
+    """Returns the absolute path to the file path. Raises in any other circumstance
+
+    Args:
+        working_directory: Working directory where it is allowed
+        file_path: File path inside the working directory
+        file_action: verb to describe the intented action
+
+    Returns:
+        Path of the file path
+    """
+    wd = Path(working_directory).resolve()
+
+    assert wd.exists() and wd.is_dir(), "Working directory is not valid"
+
+    tentative_filepath = (wd / file_path).resolve()
+
+    assert str(tentative_filepath.absolute()).startswith(
+        str(wd.absolute())
+    ), f'Cannot {file_action} "{file_path}" as it is outside the permitted working directory'
+
+    return tentative_filepath
 
 
 @llm_error_handler
@@ -71,15 +98,8 @@ def get_files_info(working_directory: str, directory: str | None = None) -> str:
 
 @llm_error_handler
 def get_file_contents(working_directory: str, file_path: str) -> str:
-    wd = Path(working_directory).resolve()
 
-    assert wd.exists() and wd.is_dir(), "Working directory is not valid"
-
-    tentative_filepath = (wd / file_path).resolve()
-
-    assert str(tentative_filepath.absolute()).startswith(
-        str(wd.absolute())
-    ), f'Cannot read "{file_path}" as it is outside the permitted working directory'
+    tentative_filepath = raise_is_file_outside(working_directory, file_path, "read")
 
     size_file = os.path.getsize(tentative_filepath)
 
@@ -93,15 +113,7 @@ def get_file_contents(working_directory: str, file_path: str) -> str:
 @llm_error_handler
 def write_file(working_directory: str, file_path: str, content: str) -> str:
 
-    wd = Path(working_directory).resolve()
-
-    assert wd.exists() and wd.is_dir(), "Working directory is not valid"
-
-    tentative_filepath = (wd / file_path).resolve()
-
-    assert str(tentative_filepath.absolute()).startswith(
-        str(wd.absolute())
-    ), f'Cannot write to "{file_path}" as it is outside the permitted working directory'
+    tentative_filepath = raise_is_file_outside(working_directory, file_path, "write")
 
     if tentative_filepath.exists():
         assert tentative_filepath.is_file()
@@ -109,3 +121,47 @@ def write_file(working_directory: str, file_path: str, content: str) -> str:
     tentative_filepath.write_text(content)
 
     return f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
+
+
+@llm_error_handler
+def run_python_file(working_directory: str, file_path: str):
+
+    tentative_filepath = raise_is_file_outside(working_directory, file_path, "execute")
+
+    assert tentative_filepath.exists(), f'Error: File "{file_path}" not found.'
+    assert (
+        tentative_filepath.suffix == ".py"
+    ), f'Error: "{file_path}" is not a Python file.'
+
+    llm_response = ""
+
+    try:
+        # Run the Python file using subprocess
+        result = subprocess.run(
+            ["python", str(tentative_filepath)],
+            cwd=working_directory,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        # Check for output and format the result
+        output = result.stdout.strip()
+        errors = result.stderr.strip()
+
+        if output:
+            llm_response += f"STDOUT: {output}\n"
+        if errors:
+            llm_response += (
+                f"STDERR: {errors}\nProcess exited with code {result.returncode}\n"
+            )
+
+        if llm_response == "":
+            llm_response = "No output produced"
+
+    except subprocess.TimeoutExpired:
+        raise Exception("Execution timed out after 30 seconds.")
+    except Exception as e:
+        raise Exception(f"Executing python file: {e}")
+
+    return f'{llm_response}\nSuccessfully executed "{file_path}"'

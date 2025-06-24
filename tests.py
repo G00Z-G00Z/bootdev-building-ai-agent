@@ -5,7 +5,7 @@ from pathlib import Path
 import unittest
 
 from functions.get_files_info import (
-    write_file,
+    run_python_file,
 )
 
 
@@ -17,29 +17,22 @@ class TestGetFilesInfo(unittest.TestCase):
         wd = os.getcwd()
         self.dir_calculator = str(Path(wd) / "calculator")
 
-    def test_write_files(self):
-        result = write_file(
-            self.dir_calculator, "lorem.txt", "wait, this isn't lorem ipsum"
-        )
-        print(result)
-        self.assertIn(
-            "Successfully wrote to", result, "Did not successfully write to the file"
-        )
+    def test_run_python(self):
 
-        result = write_file(
-            self.dir_calculator, "pkg/morelorem.txt", "lorem ipsum dolor sit amet"
-        )
+        result = run_python_file(self.dir_calculator, "main.py")
         print(result)
-        self.assertIn(
-            "Successfully wrote to", result, "Did not successfully write to the file"
-        )
-        result = write_file(
-            self.dir_calculator, "/tmp/temp.txt", "this should not be allowed"
-        )
+        self.assertFalse(result.startswith("Error: "), "Expected to get an error")
+
+        result = run_python_file(self.dir_calculator, "tests.py")
         print(result)
-        self.assertNotIn(
-            "Successfully wrote to", result, "Did not successfully write to the file"
-        )
+        self.assertFalse(result.startswith("Error: "), "Expected to get an error")
+
+        result = run_python_file(self.dir_calculator, "../main.py")
+        print(result)
+        self.assertTrue(result.startswith("Error: "), "Expected to get an error")
+
+        result = run_python_file(self.dir_calculator, "nonexistent.py")
+        print(result)
         self.assertTrue(result.startswith("Error: "), "Expected to get an error")
 
 
