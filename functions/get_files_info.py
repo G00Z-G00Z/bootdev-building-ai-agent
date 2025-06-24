@@ -88,4 +88,24 @@ def get_file_contents(working_directory: str, file_path: str) -> str:
         contents = file.read(MAX_CHARS)
         if size_file > MAX_CHARS:
             return f'{contents}... "{file_path}" truncated at 10000 characters'
-        return contents
+
+
+@llm_error_handler
+def write_file(working_directory: str, file_path: str, content: str) -> str:
+
+    wd = Path(working_directory).resolve()
+
+    assert wd.exists() and wd.is_dir(), "Working directory is not valid"
+
+    tentative_filepath = (wd / file_path).resolve()
+
+    assert str(tentative_filepath.absolute()).startswith(
+        str(wd.absolute())
+    ), f'Cannot write to "{file_path}" as it is outside the permitted working directory'
+
+    if tentative_filepath.exists():
+        assert tentative_filepath.is_file()
+
+    tentative_filepath.write_text(content)
+
+    return f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
