@@ -7,7 +7,7 @@ import argparse as ap
 
 from google.genai import types
 
-from call_function import available_functions
+from call_function import AVAILABLE_FUNCTIONS_FOR_LLM, call_function
 
 
 load_dotenv()
@@ -74,14 +74,12 @@ def main():
         contents=messages,
         config=types.GenerateContentConfig(
             system_instruction=system_prompt,
-            tools=[available_functions],
+            tools=[AVAILABLE_FUNCTIONS_FOR_LLM],
         ),
     )
 
     if verbose:
-
         print(f"User prompt: {response.text}")
-
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
     else:
@@ -89,10 +87,11 @@ def main():
 
     if response.function_calls:
         for function_call_part in response.function_calls:
-            print(response.function_calls)
-            print(
-                f"Calling function: {function_call_part.name}({function_call_part.args})"
-            )
+
+            function_call_result = call_function(function_call_part, verbose)
+
+            if verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
 
 
 if __name__ == "__main__":

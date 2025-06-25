@@ -125,6 +125,7 @@ def get_file_contents(working_directory: str, file_path: str) -> str:
         contents = file.read(MAX_CHARS)
         if size_file > MAX_CHARS:
             return f'{contents}... "{file_path}" truncated at 10000 characters'
+        return contents
 
 
 schema_get_file_contents = types.FunctionDeclaration(
