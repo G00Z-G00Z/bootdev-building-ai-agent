@@ -127,6 +127,21 @@ def get_file_contents(working_directory: str, file_path: str) -> str:
             return f'{contents}... "{file_path}" truncated at 10000 characters'
 
 
+schema_get_file_contents = types.FunctionDeclaration(
+    name="get_file_contents",
+    description="Retrieves the contents of a specified file, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path of the file to read, relative to the working directory.",
+            ),
+        },
+    ),
+)
+
+
 @llm_error_handler
 def write_file(working_directory: str, file_path: str, content: str) -> str:
 
@@ -138,6 +153,25 @@ def write_file(working_directory: str, file_path: str, content: str) -> str:
     tentative_filepath.write_text(content)
 
     return f'Successfully wrote to "{file_path}" ({len(content)} characters written)'
+
+
+schema_write_file = types.FunctionDeclaration(
+    name="write_file",
+    description="Writes content to a specified file, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path of the file to write to, relative to the working directory.",
+            ),
+            "content": types.Schema(
+                type=types.Type.STRING,
+                description="The content to write to the file.",
+            ),
+        },
+    ),
+)
 
 
 @llm_error_handler
@@ -182,3 +216,18 @@ def run_python_file(working_directory: str, file_path: str):
         raise Exception(f"Executing python file: {e}")
 
     return f'{llm_response}\nSuccessfully executed "{file_path}"'
+
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes a specified Python file, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path of the Python file to execute, relative to the working directory.",
+            ),
+        },
+    ),
+)
