@@ -7,6 +7,7 @@ import argparse as ap
 
 from google.genai import types
 
+from agent import agent_loop
 from call_function import AVAILABLE_FUNCTIONS_FOR_LLM, call_function
 
 
@@ -65,33 +66,11 @@ def main():
     contents: str = args.contents
     verbose: bool = args.verbose
 
-    messages = [
-        types.Content(role="user", parts=[types.Part(text=contents)]),
-    ]
+    response = agent_loop(client=client, content=contents, verbose=verbose)
 
-    response = client.models.generate_content(
-        model=model_name,
-        contents=messages,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            tools=[AVAILABLE_FUNCTIONS_FOR_LLM],
-        ),
-    )
-
-    if verbose:
-        print(f"User prompt: {response.text}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-    else:
-        print(response.text)
-
-    if response.function_calls:
-        for function_call_part in response.function_calls:
-
-            function_call_result = call_function(function_call_part, verbose)
-
-            if verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
+    assert response is not None
+    print(response)
+    return response
 
 
 if __name__ == "__main__":
